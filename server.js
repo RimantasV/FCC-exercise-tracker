@@ -26,7 +26,7 @@ app.post("/api/exercise/new-user", (req, res) => {
   newUser.save().then(res.json(newUser));
 });
 
-app.post("/api/exercise/add", (req, res) => {
+app.post("/api/exercise/add", function(req, res) {
   const newLog = {
     description: req.body.description,
     duration: req.body.duration,
@@ -37,23 +37,24 @@ app.post("/api/exercise/add", (req, res) => {
     { _id: req.body.userId },
     { $push: { log: newLog } },
     { useFindAndModify: false },
-    (err, data) => {
+    function(err, data) {
       if (err) {
         return console.log(err);
       } else {
         res.json({
           username: data.username,
+          _id: req.body.userId,
           description: req.body.description,
           duration: req.body.duration,
-          _id: req.body.userId,
-          date: req.body.date ? req.body.date : new Date()
+          date: req.body.date ? new Date(req.body.date).toDateString() : new Date().toDateString()
         });
+        // res.json(data)
       }
     }
   );
 });
 
-app.get("/api/exercise/users", (req, res) => {
+app.get("/api/exercise/users", function(req, res) {
   User.find({}, (err, data) => {
     if (err) {
       return console.log(err);
@@ -63,11 +64,11 @@ app.get("/api/exercise/users", (req, res) => {
   });
 });
 
-app.get("/api/exercise/log", (req, res) => {
+app.get("/api/exercise/log", function(req, res) {
   if (!req.query.username) {
     res.json({ error: "Username missing" });
   } else {
-    User.find({ username: req.query.username }, (err, data) => {
+    User.find({ username: req.query.username }, function(err, data) {
       if (err) {
         return console.log(err);
       } else {
