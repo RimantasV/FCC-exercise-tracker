@@ -1,7 +1,8 @@
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
-
+const assert = require("assert");
+const fetch = require("node-fetch");
 const cors = require("cors");
 
 const mongoose = require("mongoose");
@@ -20,6 +21,23 @@ app.use(express.static("public"));
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/views/index.html");
 });
+
+const x = {
+  username: "username",
+  description: "test",
+  duration: 60,
+  _id: "_id",
+  date: "Mon Jan 01 1990"
+};
+const y = {
+  username: "username",
+  description: "test",
+  duration: 60,
+  _id: "_id",
+  date: "Mon Jan 01 1990"
+};
+
+assert.deepEqual(x, y);
 
 app.post("/api/exercise/new-user", (req, res) => {
   const newUser = new User({ username: req.body.username });
@@ -43,16 +61,37 @@ app.post("/api/exercise/add", function(req, res) {
       } else {
         res.json({
           username: data.username,
-          _id: req.body.userId,
           description: req.body.description,
-          duration: req.body.duration,
-          date: req.body.date ? new Date(req.body.date).toDateString() : new Date().toDateString()
+          duration: parseInt(req.body.duration),
+          _id: req.body.userId,
+          date: req.body.date
+            ? new Date(req.body.date).toDateString()
+            : new Date().toDateString()
         });
         // res.json(data)
       }
     }
   );
 });
+
+// const logExercise = (req, res) => {
+//   User.findOneAndUpdate(
+//     { _id: req.body.id },
+//     { useFindAndModify: false },
+//     {
+//       $push: { log: req.body },
+//       $inc: { count: 1 }
+//     },
+//     (err, docs) => {
+//       if (err) {
+//         return console.log(err);
+//       } else {
+//         res.json(docs);
+//       }
+//     }
+//   );
+// };
+// app.post("/api/exercise/add", logExercise);
 
 app.get("/api/exercise/users", function(req, res) {
   User.find({}, (err, data) => {
@@ -65,10 +104,10 @@ app.get("/api/exercise/users", function(req, res) {
 });
 
 app.get("/api/exercise/log", function(req, res) {
-  if (!req.query.username) {
-    res.json({ error: "Username missing" });
+  if (!req.query.userId) {
+    res.json({ error: "UserId missing" });
   } else {
-    User.find({ username: req.query.username }, function(err, data) {
+    User.find({ _id: req.query.userId }, function(err, data) {
       if (err) {
         return console.log(err);
       } else {
@@ -77,21 +116,58 @@ app.get("/api/exercise/log", function(req, res) {
           filteredLog = filteredLog.slice(0, req.query.limit);
         }
         if (req.query.from) {
-          filteredLog = filteredLog.filter(
-            exercise => exercise.date > req.query.from
+          console.log(filteredLog, req.query.from);
+          filteredLog = filteredLog.filter(exercise =>
+             exercise.date.toISOString() > req.query.from
           );
         }
         if (req.query.to) {
           filteredLog = filteredLog.filter(
-            exercise => exercise.date < req.query.to
+            exercise => exercise.date.toISOString() < req.query.to
           );
         }
         const count = filteredLog.length;
-        res.json({ _id: data[0]._id, username: req.query.username, count: count, log: filteredLog });
+        res.json({
+          _id: data[0]._id,
+          username: req.query.username,
+          count: count,
+          log: filteredLog
+        });
       }
     });
   }
 });
+
+// function getUserInput(){
+//    fetch('https://rimantas-exercise-tracker.glitch.me/api/exercise/users')
+//   .then((response) => {
+//     return response.json();
+//   })
+//   .then((data) => {
+//     assert.isArray(data);
+//   });
+
+// if (res.ok) {
+//   const data =  res.json();
+//   assert.isArray(data);
+// } else {
+//   throw new Error(`${res.status} ${res.statusText}`);
+// }
+// }
+
+// getUserInput();
+
+// app.get("/test", (req, res) => {
+//       const url = getUserInput('https://rimantas-exercise-tracker.glitch.me');
+//       const result = fetch(url + '/api/exercise/users');
+
+//       if (res.ok) {
+//         const data = await res.json();
+//         assert.isArray(data);
+//       } else {
+//         throw new Error(`${res.status} ${res.statusText}`);
+//       }
+// })
 
 // Not found middleware
 app.use((req, res, next) => {
